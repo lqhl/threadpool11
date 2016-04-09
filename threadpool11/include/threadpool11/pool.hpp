@@ -22,6 +22,7 @@ This file is part of threadpool11.
 
 #include "worker.hpp"
 #include "utility.hpp"
+#include "concurrentqueue.h"
 
 #include <atomic>
 #include <cassert>
@@ -39,19 +40,6 @@ This file is part of threadpool11.
 #else
 #define threadpool11_EXPORT
 #endif
-
-namespace boost {
-namespace parameter {
-struct void_;
-}
-namespace lockfree {
-template <typename T,
-          class A0,
-          class A1,
-          class A2>
-class queue;
-}
-}
 
 namespace threadpool11 {
 
@@ -216,10 +204,7 @@ private:
   // bool work_signal_prot; //! wake up protection // <- work_queue_size is used instead of this
   std::condition_variable work_signal_;
 
-  std::unique_ptr<
-      boost::lockfree::
-          queue<Work::Callable*, boost::parameter::void_, boost::parameter::void_, boost::parameter::void_>>
-      work_queue_;
+  std::unique_ptr<moodycamel::ConcurrentQueue<Work::Callable*>> work_queue_;
   std::atomic<size_t> work_queue_size_;
 };
 

@@ -10,13 +10,7 @@ if(NOT CMAKE_BUILD_TYPE)
   # SET the possible values of build type for cmake-gui
 endif()
 
-find_package(Boost)
-
-if(Boost_FOUND)
-  include_directories(${Boost_INCLUDE_DIR})
-else()
-  include_directories("ext/include")
-endif()
+include_directories("concurrentqueue")
 
 set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Release" "Debug" "Perf")
 
