@@ -164,10 +164,14 @@ As mentioned above, a full blocking wrapper of the queue is provided that adds
 This wrapper is extremely low-overhead, but slightly less fast than the non-blocking
 queue (due to the necessary bookkeeping involving a lightweight semaphore).
 
+There are also timed versions that allow a timeout to be specified (either in microseconds
+or with a `std::chrono` object).
+
 The only major caveat with the blocking version is that you must be careful not to
 destroy the queue while somebody is waiting on it. This generally means you need to
 know for certain that another element is going to come along before you call one of
-the blocking methods.
+the blocking methods. (To be fair, the non-blocking version cannot be destroyed while
+in use either, but it can be easier to coordinate the cleanup.)
 
 Blocking example:
 
@@ -176,6 +180,7 @@ Blocking example:
     moodycamel::BlockingConcurrentQueue<int> q;
     std::thread producer([&]() {
         for (int i = 0; i != 100; ++i) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(i % 10));
             q.enqueue(i);
         }
     });
@@ -184,6 +189,11 @@ Blocking example:
             int item;
             q.wait_dequeue(item);
             assert(item == i);
+            
+            if (q.wait_dequeue_timed(item, std::chrono::milliseconds(5))) {
+                ++i;
+                assert(item == i);
+            }
         }
     });
     producer.join();
@@ -274,7 +284,7 @@ integer division (in order for `ceil()` to work).
 
 For explicit producers (using tokens to enqueue):
 
-    (ceil(N / BLOCK_SIZE) + 1) * MAX_NUM_PRODUCERS * BLOCK_SIZ
+    (ceil(N / BLOCK_SIZE) + 1) * MAX_NUM_PRODUCERS * BLOCK_SIZE
 
 For implicit producers (no tokens):
 
@@ -285,7 +295,7 @@ When using mixed producer types:
     ((ceil(N / BLOCK_SIZE) - 1) * (MAX_EXPLICIT_PRODUCERS + 1) + 2 * (MAX_IMPLICIT_PRODUCERS + MAX_EXPLICIT_PRODUCERS)) * BLOCK_SIZE
 
 If these formulas seem rather inconvenient, you can use the constructor overload that accepts the minimum
-number of elements (`N`) and the maximum number of producers and consumers directly, and let it do the
+number of elements (`N`) and the maximum number of explicit and implicit producers directly, and let it do the
 computation for you.
 
 Finally, it's important to note that because the queue is only eventually consistent and takes advantage of
@@ -398,7 +408,8 @@ a unit test for it can be cooked up.) Just open an issue on GitHub.
 I'm releasing the source of this repository (with the exception of third-party code, i.e. the Boost queue
 (used in the benchmarks for comparison), Intel's TBB library (ditto), CDSChecker, Relacy, and Jeff Preshing's
 cross-platform semaphore, which all have their own licenses)
-under a [simplified BSD license][license].
+under a simplified BSD license. I'm also dual-licensing under the Boost Software License.
+See the [LICENSE.md][license] file for more details.
 
 Note that lock-free programming is a patent minefield, and this code may very
 well violate a pending patent (I haven't looked), though it does not to my present knowledge.
