@@ -20,8 +20,8 @@ This file is part of threadpool11.
 
 #include "threadpool11/pool.hpp"
 
-#include <boost/lockfree/queue.hpp>
-
+#include <vector>
+#include <future>
 #include <algorithm>
 
 namespace threadpool11 {
